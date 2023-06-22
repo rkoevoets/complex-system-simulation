@@ -7,6 +7,8 @@ class NeuronModel:
     """Class containing attributes and methods for the sand-pile model.
     """
     def __init__(self, size) -> None:
+        # TODO: change moment to start sampling size
+        # TODO: fix bugs
         self.network = nx.erdos_renyi_graph(size, 0.5, directed=False)
         self.size = size  # Without the sink node
 
@@ -47,11 +49,9 @@ class NeuronModel:
         return node
 
     def topple_node(self, node_i):
-        # print("toppling", node_i)
-        self.set_neuron_potential(node_i, 0.0)
+        self.add_neuron_potential(node_i, -len(list(self.get_neighbors(node_i))))
 
         for node_j in self.get_neighbors(node_i):
-            # print("adding to", node_j)
             self.add_neuron_potential(node_j, 1.0)
 
     def perform_avalanche(self, start_node):
@@ -110,8 +110,8 @@ class NeuronModel:
             self.avalanche_sizes.append(avalanche_size)
 
 
-    def run(self):
-        for i in range(100000):
+    def run(self, n_steps):
+        for i in range(n_steps):
             self.step()
 
         return self.avalanche_sizes
@@ -120,7 +120,7 @@ class NeuronModel:
 if __name__ == '__main__':
     model = NeuronModel(10)
 
-    data = np.array(model.run())
+    data = np.array(model.run(10000))
 
     # print(data)
 
