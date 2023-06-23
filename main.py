@@ -6,11 +6,10 @@ import matplotlib.pyplot as plt
 class NeuronModel:
     """Class containing attributes and methods for the sand-pile model.
     """
-    def __init__(self, size) -> None:
-        # TODO: change moment to start sampling size
-        # TODO: fix bugs
+    def __init__(self, size, sample_delay=200) -> None:
         self.network = nx.erdos_renyi_graph(size, 0.5, directed=False)
         self.size = size  # Without the sink node
+        self.sample_delay = sample_delay
 
         # Add sink nodes
         self.network.add_node(-1)
@@ -41,7 +40,7 @@ class NeuronModel:
         nx.set_node_attributes(self.network, {node_i: potential}, "potential")
 
     def get_neighbors(self, node_i):
-        return self.network.neighbors(node_i)
+        return list(self.network.neighbors(node_i))
 
     def pick_random_non_sink(self):
         node = list(self.network.nodes)[np.random.randint(0, self.size)]
@@ -50,9 +49,12 @@ class NeuronModel:
 
     def topple_node(self, node_i):
         self.add_neuron_potential(node_i, -len(list(self.get_neighbors(node_i))))
+        neighbors = self.get_neighbors(node_i)
 
-        for node_j in self.get_neighbors(node_i):
-            self.add_neuron_potential(node_j, 1.0)
+        potentials = nx.get_node_attributes(self.network, "potential")
+        new_potentials = {neigh: potentials[neigh] + 1 for neigh in neighbors}
+
+        nx.set_node_attributes(self.network, new_potentials, "potential")
 
     def perform_avalanche(self, start_node):
         unstable = [start_node]
@@ -60,9 +62,6 @@ class NeuronModel:
         avalanche_size = 0
 
         while unstable:
-            # print(unstable)
-            # print(nx.get_node_attributes(self.network, "potential"))
-            # print(nx.degree(self.network))
             random_index = np.random.randint(0, len(unstable))
             curr_node = unstable.pop(random_index)
 
@@ -94,31 +93,32 @@ class NeuronModel:
 
         return avalanche_size
 
-    def step(self) -> None:
+    def step(self, iteration) -> None:
         # Choose random node
         node_i = self.pick_random_non_sink()
 
         # Increment grains
         self.add_neuron_potential(node_i, 1.0)
 
-        # print("inc.", node_i)
-
         # Check for instabilities
         if self.get_neuron_potential(node_i) >= self.get_neuron_degree(node_i):
             avalanche_size = self.perform_avalanche(node_i)
 
-            self.avalanche_sizes.append(avalanche_size)
+            if iteration > self.sample_delay:
+                self.avalanche_sizes.append(avalanche_size)
 
 
     def run(self, n_steps):
+        assert self.sample_delay < n_steps, "Number of steps must be higher than sample delay"
+
         for i in range(n_steps):
-            self.step()
+            self.step(i)
 
         return self.avalanche_sizes
 
 
 if __name__ == '__main__':
-    model = NeuronModel(10)
+    model = NeuronModel(20)
 
     data = np.array(model.run(10000))
 
