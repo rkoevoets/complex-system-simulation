@@ -48,11 +48,11 @@ class NeuronModel:
         return node
 
     def topple_node(self, node_i):
-        self.add_neuron_potential(node_i, -len(list(self.get_neighbors(node_i))))
         neighbors = self.get_neighbors(node_i)
 
         potentials = nx.get_node_attributes(self.network, "potential")
         new_potentials = {neigh: potentials[neigh] + 1 for neigh in neighbors}
+        new_potentials[node_i] = potentials[node_i] - len(list(self.get_neighbors(node_i)))
 
         nx.set_node_attributes(self.network, new_potentials, "potential")
 
@@ -120,14 +120,14 @@ class NeuronModel:
 if __name__ == '__main__':
     model = NeuronModel(20)
 
-    data = np.array(model.run(10000))
+    data = np.array(model.run(1000))
 
-    # print(data)
+    print(data)
 
-    plt.hist(data, density=True, log=True)
+    # plt.hist(data, density=True, log=True)
 
-    plt.title("Avalanche size distribution")
-    plt.xlabel("s")
-    plt.ylabel("P(s)")
+    # plt.title("Avalanche size distribution")
+    # plt.xlabel("s")
+    # plt.ylabel("P(s)")
 
-    plt.show()
+    # plt.show()
