@@ -16,7 +16,7 @@ class NeuronModel:
 
         self.size = network.number_of_nodes() - 1  # Without the sink node
 
-        self.adj_matrix = nx.adjacency_matrix(self.network).toarray()
+        self.adj_matrix = nx.adjacency_matrix(self.network, nodelist=[-1] + list(network.nodes)[:-1]).toarray()
         self.potentials = np.zeros(self.adj_matrix.shape[0])
         self.degrees = np.array([np.sum(self.adj_matrix[i]) for i in range(self.adj_matrix.shape[0])])
 
@@ -58,7 +58,7 @@ class NeuronModel:
         return avalanche_size
 
     def step(self, iteration) -> None:
-        # Choose random node
+        # Choose random node (ignore node 0 (sink node))
         node_i = np.random.randint(1, self.size + 1)
 
         # Increment potential
