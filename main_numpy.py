@@ -6,18 +6,15 @@ import matplotlib.pyplot as plt
 class NeuronModel:
     """Class containing attributes and methods for the sand-pile model.
     """
-    def __init__(self, size, sample_delay=200) -> None:
-        self.network = nx.erdos_renyi_graph(size, 0.5, directed=False)
+    def __init__(self, network, sample_delay=200) -> None:
+        # Network should have a node with the label -1 which is the sink node
+        # All nodes should be able to reach the sink node
+        self.network = network
 
-        # Add sink node connections (boundaries)
-        self.network.add_node(-1)
+        assert network.has_node(-1), "Network must contain sink node (label -1)"
+        assert nx.ancestors(network, -1) == set(network.nodes).difference({-1,}), "All nodes must be able to reach the sink node"
 
-        for comp in nx.connected_components(self.network):
-            self.network.add_edge(-1, list(comp)[0])
-
-        assert nx.is_connected(self.network), "All nodes must be able to reach a sink node"
-
-        self.size = size  # Without the sink node
+        self.size = network.number_of_nodes() - 1  # Without the sink node
 
         self.adj_matrix = nx.adjacency_matrix(self.network).toarray()
         self.potentials = np.zeros(self.adj_matrix.shape[0])
@@ -74,7 +71,6 @@ class NeuronModel:
             if iteration > self.sample_delay:
                 self.avalanche_sizes.append(avalanche_size)
 
-
     def run(self, n_steps):
         assert self.sample_delay < n_steps, "Number of steps must be higher than sample delay"
 
@@ -85,7 +81,11 @@ class NeuronModel:
 
 
 if __name__ == '__main__':
-    model = NeuronModel(100)
+    network = nx.erdos_renyi_graph(100, 0.5, directed=False)
+    network.add_node(-1)
+    network.add_edge(0, -1)
+
+    model = NeuronModel(network)
 
     data = model.run(10000)
 
