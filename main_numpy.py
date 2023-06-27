@@ -58,7 +58,7 @@ class NeuronModel:
         return avalanche_size
 
     def step(self, iteration) -> None:
-        # Choose random node
+        # Choose random node (ignore node 0 (sink node))
         node_i = np.random.randint(1, self.size + 1)
 
         # Increment potential
