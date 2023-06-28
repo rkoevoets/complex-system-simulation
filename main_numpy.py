@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 class NeuronModel:
     """Class containing attributes and methods for the sand-pile model.
     """
-    def __init__(self, network, sample_delay=200) -> None:
+    def __init__(self, network, sample_delay=0, start_filled=False) -> None:
         # Network should have a node with the label -1 which is the sink node
         # All nodes should be able to reach the sink node
         self.network = network
@@ -17,7 +17,13 @@ class NeuronModel:
         self.size = network.number_of_nodes() - 1  # Without the sink node
 
         self.adj_matrix = nx.adjacency_matrix(self.network, nodelist=[-1] + list(network.nodes)[:-1]).toarray()
-        self.potentials = np.zeros(self.adj_matrix.shape[0])
+
+        if start_filled:
+            self.potentials = [x for (_, x) in self.network.degree()]
+            self.potentials = [self.potentials[-1]] + self.potentials[:-1]
+            self.potentials = self.potentials - np.ones_like(self.potentials)
+        else:
+            self.potentials = np.zeros(self.adj_matrix.shape[0], dtype=int)
         self.degrees = np.array([np.sum(self.adj_matrix[i]) for i in range(self.adj_matrix.shape[0])])
 
         self.sample_delay = sample_delay
@@ -29,6 +35,9 @@ class NeuronModel:
         return np.sum(self.adj_matrix[node_i])
 
     def topple_node(self, node_i):
+        # print("toppling", node_i)
+        # print(self.potentials[1:].reshape(5, 5))
+
         new_potentials = np.copy(self.potentials)
 
         # Decrease potential of toppled node
@@ -39,21 +48,25 @@ class NeuronModel:
 
         self.potentials = new_potentials
 
+        # print(self.potentials[1:].reshape(5, 5))
+
     def perform_avalanche(self, start_node):
         unstable = np.array([start_node])
         curr_node = None
         avalanche_size = 0
 
+        # print("avalanche starting at", start_node)
+
         while unstable.size > 0:
             # Pick a random unstable node
-            random_index = np.random.randint(0, len(unstable))
-            curr_node = unstable[random_index]
+            curr_node = np.random.choice(unstable)
 
             # Topple unstable node
             self.topple_node(curr_node)
             avalanche_size += 1
 
-            unstable = np.arange(self.potentials.size)[self.potentials >= self.degrees][1:]
+            unstable = np.arange(self.potentials.size)[self.potentials >= self.degrees]
+            unstable = unstable[unstable != 0]
 
         return avalanche_size
 
@@ -80,19 +93,51 @@ class NeuronModel:
         return np.array(self.avalanche_sizes)
 
 
-if __name__ == '__main__':
-    network = nx.erdos_renyi_graph(100, 0.5, directed=False)
-    network.add_node(-1)
-    network.add_edge(0, -1)
+def create_2d_grid_graph(rows, columns):
+    """Returns network as 2D grid graph and nodes on the periphery are sinks"""
+    grid_graph = nx.grid_2d_graph(rows, columns, create_using=nx.MultiGraph)
+    converted_graph = nx.convert_node_labels_to_integers(grid_graph)
+    converted_graph.add_node(-1)  # Add sink node
 
-    model = NeuronModel(network)
+    for node in converted_graph.nodes():
+        for i in range(4 - converted_graph.degree(node)):
+            converted_graph.add_edge(node, -1)  # Add edge to sink node
+
+    return converted_graph
+
+
+def create_random_graph(size, p):
+    network = nx.erdos_renyi_graph(size, p, directed=False)
+
+    network.add_node(-1)
+    for comp in nx.connected_components(network):
+        print(len(comp))
+        network.add_edge(list(comp)[0], -1)
+
+    return network
+
+
+if __name__ == '__main__':
+    network = create_random_graph(1000, 0.005)
+    model = NeuronModel(network, sample_delay=0, start_filled=False)
 
     data = model.run(10000)
 
-    plt.hist(data, density=True, log=True)
+    # plt.hist(data, density=True, log=True)
+
+    avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
+
+    # Plot the data points on a log-log scale
+    plt.figure()
+    plt.scatter(avalanche_sizes_grid, frequencies_grid )
 
     plt.title("Avalanche size distribution")
     plt.xlabel("s")
     plt.ylabel("P(s)")
+
+    # Set log-log scale
+    plt.xscale('log')
+    plt.yscale('log')
+
 
     plt.show()
