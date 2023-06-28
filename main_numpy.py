@@ -106,38 +106,52 @@ def create_2d_grid_graph(rows, columns):
     return converted_graph
 
 
-def create_random_graph(size, p):
+def create_random_graph(size, p, random_sink_node_edges=False):
     network = nx.erdos_renyi_graph(size, p, directed=False)
 
+    components = [c for c in nx.connected_components(network)]
     network.add_node(-1)
-    for comp in nx.connected_components(network):
-        print(len(comp))
+    for comp in components:
         network.add_edge(list(comp)[0], -1)
+
+    if random_sink_node_edges:
+        for node in network.nodes():
+            if np.random.rand() < p:
+                network.add_edge(node, -1)
 
     return network
 
 
 if __name__ == '__main__':
-    network = create_random_graph(1000, 0.005)
+    network = create_random_graph(100, 0.5)
     model = NeuronModel(network, sample_delay=0, start_filled=False)
 
     data = model.run(10000)
 
     # plt.hist(data, density=True, log=True)
 
-    avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
+    # # avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
 
-    # Plot the data points on a log-log scale
-    plt.figure()
-    plt.scatter(avalanche_sizes_grid, frequencies_grid )
+    # # Plot the data points on a log-log scale
+    # # plt.figure()
+    # # plt.scatter(avalanche_sizes_grid, frequencies_grid )
+
+    # plt.title("Avalanche size distribution")
+    # plt.xlabel("s")
+    # plt.ylabel("P(s)")
+
+    # # Set log-log scale
+    # plt.xscale('log')
+    # plt.yscale('log')
+
+
+    # plt.show()
+
+    # plotting scatter plot
+    plt.hist(data, density=False, log=False)
 
     plt.title("Avalanche size distribution")
     plt.xlabel("s")
     plt.ylabel("P(s)")
-
-    # Set log-log scale
-    plt.xscale('log')
-    plt.yscale('log')
-
 
     plt.show()
