@@ -35,9 +35,6 @@ class NeuronModel:
         return np.sum(self.adj_matrix[node_i])
 
     def topple_node(self, node_i):
-        # print("toppling", node_i)
-        # print(self.potentials[1:].reshape(5, 5))
-
         new_potentials = np.copy(self.potentials)
 
         # Decrease potential of toppled node
@@ -48,14 +45,10 @@ class NeuronModel:
 
         self.potentials = new_potentials
 
-        # print(self.potentials[1:].reshape(5, 5))
-
     def perform_avalanche(self, start_node):
         unstable = np.array([start_node])
         curr_node = None
         avalanche_size = 0
-
-        # print("avalanche starting at", start_node)
 
         while unstable.size > 0:
             # Pick a random unstable node
@@ -100,8 +93,16 @@ def create_2d_grid_graph(rows, columns):
     converted_graph.add_node(-1)  # Add sink node
 
     for node in converted_graph.nodes():
-        for i in range(4 - converted_graph.degree(node)):
+        for _ in range(4 - converted_graph.degree(node)):
             converted_graph.add_edge(node, -1)  # Add edge to sink node
+
+    color_map =  ['#1f78b4' for _ in range(25)] + ['black']
+    pos = {i: (y,-x) for i, (x, y) in enumerate(grid_graph.nodes())}
+    pos[-1] = (-1, -1)
+
+
+    nx.draw(converted_graph, pos=pos, node_color=color_map)
+    plt.show()
 
     return converted_graph
 
@@ -123,35 +124,24 @@ def create_random_graph(size, p, random_sink_node_edges=False):
 
 
 if __name__ == '__main__':
-    network = create_random_graph(100, 0.5)
-    model = NeuronModel(network, sample_delay=0, start_filled=False)
+    network = create_random_graph(100, 0.5, random_sink_node_edges=True)
+    model = NeuronModel(network, sample_delay=0, start_filled=True)
 
-    data = model.run(10000)
+    data = model.run(100000)
 
-    # plt.hist(data, density=True, log=True)
+    avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
 
-    # # avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
-
-    # # Plot the data points on a log-log scale
-    # # plt.figure()
-    # # plt.scatter(avalanche_sizes_grid, frequencies_grid )
-
-    # plt.title("Avalanche size distribution")
-    # plt.xlabel("s")
-    # plt.ylabel("P(s)")
-
-    # # Set log-log scale
-    # plt.xscale('log')
-    # plt.yscale('log')
-
-
-    # plt.show()
-
-    # plotting scatter plot
-    plt.hist(data, density=False, log=False)
+    # Plot the data points on a log-log scale
+    plt.figure()
+    plt.scatter(avalanche_sizes_grid, frequencies_grid )
 
     plt.title("Avalanche size distribution")
     plt.xlabel("s")
     plt.ylabel("P(s)")
+
+    # Set log-log scale
+    plt.xscale('log')
+    plt.yscale('log')
+
 
     plt.show()
