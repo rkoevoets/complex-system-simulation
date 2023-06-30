@@ -10,14 +10,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from main_numpy import NeuronModel
+import matplotlib
 
 
 if __name__ == '__main__':
+    colors = ['blue', 'green', 'orange', 'red' ]
     N = [100,400,1600,3600] #Keep in mind the problem with N=5000
     for i in range(len(N)): #go through the list to get different N
-        
+
         #Extract Data
-        network = nx.erdos_renyi_graph(400, 0.1, directed=False)
+        network = nx.erdos_renyi_graph(N[i], 0.1, directed=False)
         network.add_node(-1)  # Adding the sink node
 
         p = 0.9  # Probability of adding an edge to the sink
@@ -28,18 +30,21 @@ if __name__ == '__main__':
                 if np.random.random() < p:
                     network.add_edge(node, -1)
 
-        model = NeuronModel(network, sample_delay=10000, start_filled=False)
+        model = NeuronModel(network, sample_delay=10000, start_filled=True)
         data = np.array(model.run(100000))
         sizes, counts = np.unique(data, return_counts=True)
-    
-        
+
+
         #Plot avalanche distribution for specific N
-        plt.scatter(sizes, counts, marker='.',label="N="+str(N[i]))
-        plt.xscale("log") 
+        plt.scatter(sizes, counts, marker='.',label="N="+str(N[i]), color= colors[i], s = 120)
+        plt.xscale("log")
         plt.yscale("log")
+
+        plt.title('Avalanche size distribution with p = 0.1 and p_sink = 0.9', fontsize = '15')
         plt.xlabel("s")
         plt.ylabel("frequency")
         plt.legend()
-    plt.savefig("ER_frequency.png", dpi = 300)
-    plt.show()
+        plt.savefig("ER_frequency.png", dpi = 300)
+        plt.show()
 
+########################
