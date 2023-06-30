@@ -1,3 +1,14 @@
+"""Abelian sandpile model for networks
+Course: Complex System Simulation
+Date: 30-06-2023
+
+Group id: 4
+Members:
+Aizhan Shagadatova
+Robbie Koevoets
+Roshan Baldewsing
+Valentin Rosario
+"""
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -32,9 +43,23 @@ class NeuronModel:
         self.avalanche_sizes = []
 
     def get_node_degree(self, node_i):
+        """Return the degree of the node with index node_i
+
+        Args:
+            node_i (int): the node index
+
+        Returns:
+            int: degree of the node
+        """
         return np.sum(self.adj_matrix[node_i])
 
     def topple_node(self, node_i):
+        """Topple the node at index node_i.
+        Redistributes deg(node_i) units over its neighbors.
+
+        Args:
+            node_i (int): node to topple
+        """
         new_potentials = np.copy(self.potentials)
 
         # Decrease potential of toppled node
@@ -46,6 +71,14 @@ class NeuronModel:
         self.potentials = new_potentials
 
     def perform_avalanche(self, start_node):
+        """Start an avalanche, starting at node start_node.
+
+        Args:
+            start_node (int): index of starting node
+
+        Returns:
+            int: avalanche size (amount of topple events)
+        """
         unstable = np.array([start_node])
         curr_node = None
         avalanche_size = 0
@@ -64,6 +97,12 @@ class NeuronModel:
         return avalanche_size
 
     def step(self, iteration) -> None:
+        """Perform an iteration of the model.
+        Avalanches happen within one iteration.
+
+        Args:
+            iteration (int): iteration number
+        """
         # Choose random node (ignore node 0 (sink node))
         node_i = np.random.randint(1, self.size + 1)
 
@@ -78,6 +117,14 @@ class NeuronModel:
                 self.avalanche_sizes.append(avalanche_size)
 
     def run(self, n_steps):
+        """Run the model for n_steps steps
+
+        Args:
+            n_steps (int): amount of iterations to run
+
+        Returns:
+            np.array: array containing all avalanche sizes
+        """
         assert self.sample_delay < n_steps, "Number of steps must be higher than sample delay"
 
         for i in range(n_steps):
@@ -96,18 +143,23 @@ def create_2d_grid_graph(rows, columns):
         for _ in range(4 - converted_graph.degree(node)):
             converted_graph.add_edge(node, -1)  # Add edge to sink node
 
-    color_map =  ['#1f78b4' for _ in range(25)] + ['black']
     pos = {i: (y,-x) for i, (x, y) in enumerate(grid_graph.nodes())}
     pos[-1] = (-1, -1)
-
-
-    nx.draw(converted_graph, pos=pos, node_color=color_map)
-    plt.show()
 
     return converted_graph
 
 
 def create_random_graph(size, p, random_sink_node_edges=False):
+    """Create a random network using networkx.
+
+    Args:
+        size (int): size of the network
+        p (float): edge probability
+        random_sink_node_edges (bool, optional): whether to add random sink node connections. Defaults to False.
+
+    Returns:
+        nx.MultiGraph: Random network
+    """
     network = nx.erdos_renyi_graph(size, p, directed=False)
 
     components = [c for c in nx.connected_components(network)]
@@ -142,6 +194,5 @@ if __name__ == '__main__':
     # Set log-log scale
     plt.xscale('log')
     plt.yscale('log')
-
 
     plt.show()
