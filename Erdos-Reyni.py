@@ -12,7 +12,7 @@ from scipy.optimize import curve_fit
 from main_numpy import NeuronModel
 import matplotlib
 
-
+'''Change p and p vor the edges to change edge connectivity chance and edge sink connectivity chance'''
 if __name__ == '__main__':
     colors = ['blue', 'green', 'orange', 'red' ]
     N = [100,400,1600,3600] #Keep in mind the problem with N=5000
