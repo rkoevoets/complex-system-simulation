@@ -192,6 +192,11 @@ def add_random_sink_connections(network, p):
 
 
 def guarantee_sink_connection(network):
+    """Add a sink node connection to components that are not connected to it.
+
+    Args:
+        network (nx.Graph): the network
+    """
     for component in nx.connected_components(network):
         if -1 not in component:
             node_i = list(component)[0]
@@ -199,6 +204,11 @@ def guarantee_sink_connection(network):
 
 
 def plot_avalanche_data(data):
+    """Plot avalanche data in a histogram
+
+    Args:
+        data (np.array): Contains avalanche sizes
+    """
     avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
 
     # Plot the data points on a log-log scale
