@@ -15,3 +15,9 @@ For the main file to run simple simulations:\
 
 To change other parameters, you can change it within the code file.
 By default (no arguments), the program will run the model with a random network of size 100.
+
+Network types:
+- random
+- small-world
+- scale-free
+- grid
