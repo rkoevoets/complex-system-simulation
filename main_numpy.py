@@ -9,6 +9,7 @@ Robbie Koevoets
 Roshan Baldewsing
 Valentin Rosario
 """
+import sys
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -91,6 +92,7 @@ class NeuronModel:
             self.topple_node(curr_node)
             avalanche_size += 1
 
+
             unstable = np.arange(self.potentials.size)[self.potentials >= self.degrees]
             unstable = unstable[unstable != 0]
 
@@ -168,19 +170,45 @@ def create_random_graph(size, p, random_sink_node_edges=False):
         network.add_edge(list(comp)[0], -1)
 
     if random_sink_node_edges:
-        for node in network.nodes():
-            if np.random.rand() < p:
-                network.add_edge(node, -1)
+        network = add_random_sink_connections(network, p)
 
     return network
 
 
-if __name__ == '__main__':
-    network = create_random_graph(100, 0.5, random_sink_node_edges=True)
-    model = NeuronModel(network, sample_delay=0, start_filled=True)
+def add_random_sink_connections(network, p):
+    """Add random connections to the sink node.
 
-    data = model.run(100000)
+    Args:
+        network (nx.Graph): the network
+        p (float): probability per node to add sink connection
+    """
+    copy_graph = network.copy()
 
+    for node in network.nodes():
+        if np.random.rand() < p:
+            copy_graph.add_edge(node, -1)
+
+    return copy_graph
+
+
+def guarantee_sink_connection(network):
+    """Add a sink node connection to components that are not connected to it.
+
+    Args:
+        network (nx.Graph): the network
+    """
+    for component in nx.connected_components(network):
+        if -1 not in component:
+            node_i = list(component)[0]
+            network.add_edge(-1, node_i)
+
+
+def plot_avalanche_data(data):
+    """Plot avalanche data in a histogram
+
+    Args:
+        data (np.array): Contains avalanche sizes
+    """
     avalanche_sizes_grid, frequencies_grid = np.unique(data, return_counts=True)
 
     # Plot the data points on a log-log scale
@@ -188,11 +216,49 @@ if __name__ == '__main__':
     plt.scatter(avalanche_sizes_grid, frequencies_grid )
 
     plt.title("Avalanche size distribution")
-    plt.xlabel("s")
-    plt.ylabel("P(s)")
+    plt.xlabel(r"$s$")
+    plt.ylabel(r"$P(s)$")
 
     # Set log-log scale
     plt.xscale('log')
     plt.yscale('log')
 
     plt.show()
+
+
+if __name__ == '__main__':
+    args = sys.argv
+    network = network = create_random_graph(100, 0.5, random_sink_node_edges=True)  # By default, run with random graph
+    iter_count = 10000
+
+    if len(args) < 3:
+        print("python main_numpy.py [network_type] [network_size] [iter_count]")
+        print("To run for different networks, please provide network_type and size")
+        print("Types:")
+        print("random\nsmall-world\nscale-free\ngrid (size is grid width)")
+    elif len(args) >= 4:
+        network_type = args[1]
+        size = int(args[2])
+        iter_count = int(args[3])
+
+        if network_type == "random":
+            network = create_random_graph(size, 0.5, random_sink_node_edges=True)
+        elif network_type == "small-world":
+            network = nx.watts_strogatz_graph(size, 4, 0.5)
+
+            network.add_node(-1)
+            add_random_sink_connections(network, 0.5)
+            guarantee_sink_connection(network)
+        elif network_type == "scale-free":
+            network = nx.barabasi_albert_graph(size, 4)
+
+            network.add_node(-1)
+            add_random_sink_connections(network, 0.5)
+            guarantee_sink_connection(network)
+        elif network_type == "grid":
+            network = create_2d_grid_graph(size, size)
+
+    model = NeuronModel(network, sample_delay=0, start_filled=True)
+    data = model.run(iter_count)
+
+    plot_avalanche_data(data)
